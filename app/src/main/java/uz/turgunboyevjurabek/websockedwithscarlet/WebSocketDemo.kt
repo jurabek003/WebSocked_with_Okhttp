@@ -1,7 +1,6 @@
 
 package uz.turgunboyevjurabek.websockedwithscarlet
 
-import android.graphics.drawable.Icon
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -11,11 +10,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -55,7 +52,7 @@ fun WebSocketDemo() {
 
     val client = OkHttpClient()
 
-    val messages = remember { mutableStateListOf<String>() }
+    val messages = remember { mutableStateListOf<ChatMessage>() }
 
     var text by remember {
         mutableStateOf("")
@@ -72,7 +69,8 @@ fun WebSocketDemo() {
             val listener = object : WebSocketListener() {
                 override fun onMessage(webSocket: WebSocket, text: String) {
                     GlobalScope.launch(Dispatchers.Main) {
-                        messages.add(text)
+                        val chatMessage= ChatMessage(0,text)
+                        messages.add(chatMessage)
                         Toast.makeText(context, "onMassage : $text", Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -103,31 +101,43 @@ fun WebSocketDemo() {
                         Toast.makeText(context, "onClosed ->  code: $code , reason: $reason" , Toast.LENGTH_SHORT).show()
                     }
                 }
-
             }
             webSocket=client.newWebSocket(request, listener)
-
         }
-
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(0.9f)
+                .weight(0.95f)
         ) {
             items(messages.size){
-                Card(
+                Column(
                     modifier = Modifier
-                        .padding(vertical = 10.dp)
+                        .fillMaxWidth()
                 ) {
-                    Text(
-                        text = messages[it],
-                        fontFamily = FontFamily.Serif,
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Medium,
+                    Card(
                         modifier = Modifier
-                            .padding(7.dp)
-                    )
+                            .padding(vertical = 10.dp, horizontal = 10.dp)
+                            .align(
+                                if (messages[it].userID == 1)
+                                    Alignment.End
+                                else Alignment.Start
+                            )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                        ) {
+                            Text(
+                                text = messages[it].message,
+                                fontFamily = FontFamily.Serif,
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier
+                                    .padding(7.dp)
+                            )
+                        }
+                    }
                 }
+
             }
         }
 
@@ -155,9 +165,11 @@ fun WebSocketDemo() {
                 }
             )
 
-            IconButton(onClick = {
+            IconButton(
+                onClick = {
                 webSocket?.send(text)
-                messages.add(text)
+                    val chatMessage=ChatMessage(1,text)
+                messages.add(chatMessage)
                 text=""
                 Log.d("LIST77",messages.lastIndex.toString())
 

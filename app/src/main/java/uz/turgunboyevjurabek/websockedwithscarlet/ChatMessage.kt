@@ -1,5 +1,6 @@
 package uz.turgunboyevjurabek.websockedwithscarlet
 
 data class ChatMessage(
-    val message: String,
+    val userID:Int,
+    val message: String
 )
