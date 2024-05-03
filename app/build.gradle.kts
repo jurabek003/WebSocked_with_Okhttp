@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
+//    kotlin("android") version "1.9.10"
+    kotlin("plugin.serialization") version "1.9.10"
 }
 
 android {
@@ -89,5 +91,22 @@ dependencies {
      * Permission for Android
      */
     implementation("com.google.accompanist:accompanist-permissions:0.31.0-alpha")
+
+    /**
+     * Retrofit2
+     */
+    implementation ("com.squareup.retrofit2:retrofit:2.9.0")
+
+    /**
+    *  GSON
+    */
+    implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation ("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+
+
+
+    // agar gredle hatolik bersa kerak bo'ladi
+        // android.enableJetifier=true
+
 
 }

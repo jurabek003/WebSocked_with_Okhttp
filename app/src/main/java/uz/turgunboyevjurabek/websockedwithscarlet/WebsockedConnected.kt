@@ -2,6 +2,7 @@
 
 package uz.turgunboyevjurabek.websockedwithscarlet
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -17,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import java.util.regex.Pattern
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -24,30 +26,33 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 
 @Composable
-fun WebsocketConnected(messages:SnapshotStateList<ChatMessage>): WebSocket? {
+fun WebsocketConnected(messages:SnapshotStateList<GetMessage>): WebSocket? {
     val context = LocalContext.current
     val client = OkHttpClient()
     // Websocket ulanishini saqlash uchun state
     var webSocket: WebSocket? by remember { mutableStateOf(null) }
     var phone = remember { mutableStateOf("") }
-
+    var message = remember { mutableStateOf("") }
 
     // Pie Host api
     //wss://free.blr2.piesocket.com/v3/1?api_key=iHWcLIKRFox5pcEto7xRs6LZztFdHjaSukLUiqEB
     // uzimiziki
 //    wss://chat.ziyo.me/chat/room
-    val request = Request.Builder().url("wss://chat.ziyo.me/chat/room")
+    val request = Request.Builder().url("wss://chat.ziyo.me/sms-chat/test")
         .build()
 
     LaunchedEffect(Unit) {
         val listener = object : WebSocketListener() {
             override fun onMessage(webSocket: WebSocket, text: String) {
                 super.onMessage(webSocket, text)
-                val chatMessage= ChatMessage(0,text.toString())
-                messages.add(chatMessage)
+                val getMessage=parseWebSocketMessage(text)
+
+                messages.add(getMessage)
                 GlobalScope.launch(Dispatchers.Main) {
                     Toast.makeText(context, "onMassage : $text", Toast.LENGTH_SHORT).show()
-                     phone.value=text.toString()
+                    Toast.makeText(context, "$getMessage", Toast.LENGTH_SHORT).show()
+                     phone.value= getMessage.phone.toString()
+                    message.value=getMessage.message.toString()
                 }
             }
             override fun onOpen(webSocket: WebSocket, response: Response) {
@@ -60,6 +65,7 @@ fun WebsocketConnected(messages:SnapshotStateList<ChatMessage>): WebSocket? {
                 super.onFailure(webSocket, t, response)
                 GlobalScope.launch(Dispatchers.Main) {
                     Toast.makeText(context, "onFailure : ${t.message}", Toast.LENGTH_SHORT).show()
+                    Log.d("usha",t.message.toString())
                 }
             }
             override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
@@ -78,19 +84,21 @@ fun WebsocketConnected(messages:SnapshotStateList<ChatMessage>): WebSocket? {
         webSocket=client.newWebSocket(request, listener)
     }
 
-    if(phone.value!=""){
-        SmsSend(phone =phone.value , message ="salom nima gap" )
-    }else{
-        Toast.makeText(context, "sms ketmadi " +
-                "Telefon raqamni +998909999999 formatida kiriting", Toast.LENGTH_SHORT).show()
+    if(isPhoneNumber(phone.value)){
+        SmsSend(phone =phone.value , message = message.value)
     }
-
-
 
     return webSocket
 }
+fun parseWebSocketMessage(jsonString: String): GetMessage {
+
+    // JSON parsingni amalga oshirish uchun JSON decode funksiyasidan foydalaning
+    val json = Json { ignoreUnknownKeys = true }  // Tasodifiy kalitlarni e'tiborsiz qoldirish uchun
+
+    return json.decodeFromString<GetMessage>(jsonString)
+}
 
 fun isPhoneNumber(input: String): Boolean {
-    val phoneRegex = "^\\+?\\d{9,15}$"
+    val phoneRegex = "^\\+?\\d{10,15}$"
     return Pattern.matches(phoneRegex, input)
 }

@@ -63,7 +63,7 @@ import okio.ByteString
 fun WebSocketDemo() {
     val context= LocalContext.current
 
-    val messages = remember { mutableStateListOf<ChatMessage>() }
+    val messages = remember { mutableStateListOf<GetMessage>() }
 
     var edtText by remember {
         mutableStateOf("")
@@ -93,27 +93,42 @@ fun WebSocketDemo() {
                     Card(
                         modifier = Modifier
                             .padding(vertical = 10.dp, horizontal = 10.dp)
-                            .align(
-                                if (messages[it].userID == 1)
-                                    Alignment.End
-                                else
-                                    Alignment.Start
-                            )
+//                            .align(
+//                                if (messages[it].userID == 1)
+//                                    Alignment.End
+//                                else
+//                                    Alignment.Start
+//                            )
                     ) {
                         Column(
                             modifier = Modifier
                         ) {
                             Text(
-                                text = messages[it].message,
+                                text = messages[it].user.toString(),
                                 fontFamily = FontFamily.Serif,
-                                fontSize = 17.sp,
+                                fontSize = 15.sp,
                                 fontWeight = FontWeight.Medium,
                                 modifier = Modifier
                                     .padding(7.dp),
-                                textAlign = if (messages[it].userID==1) TextAlign.End
-                                else TextAlign.Start
+//                                textAlign = if (messages[it].userID==1) TextAlign.End
+//                                else TextAlign.Start
 
                             )
+                            Text(
+                                text = messages[it].phone.toString(),
+                                fontFamily = FontFamily.Serif,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier
+                            )
+                            Text(
+                                text = messages[it].message.toString(),
+                                fontFamily = FontFamily.Serif,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier
+                            )
+
                         }
                     }
                 }
@@ -147,13 +162,11 @@ fun WebSocketDemo() {
                     .weight(0.8f),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
-//            SendSmsButton(phoneNumber = "905602976", message = "12345 test")
-
             IconButton(
                 onClick = {
                 webSocket?.send(edtText)
-                    val chatMessage=ChatMessage(1,edtText)
-                messages.add(chatMessage)
+//                    val chatMessage=GetMessage()
+//                messages.add(chatMessage)
                 edtText=""
                 Log.d("LIST77",messages.lastIndex.toString())
             },
