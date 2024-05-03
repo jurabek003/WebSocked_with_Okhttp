@@ -1,18 +1,29 @@
 
 package uz.turgunboyevjurabek.websockedwithscarlet
 
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.ContactsContract.CommonDataKinds.Phone
+import android.telephony.SmsManager
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,9 +43,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -43,67 +57,29 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
+import okio.ByteString
 
 @Composable
 fun WebSocketDemo() {
     val context= LocalContext.current
-    // Websocket ulanishini saqlash uchun state
-    var webSocket: WebSocket? by remember { mutableStateOf(null) }
-
-    val client = OkHttpClient()
 
     val messages = remember { mutableStateListOf<ChatMessage>() }
 
-    var text by remember {
+    var edtText by remember {
         mutableStateOf("")
     }
+    var getNumber by remember {
+        mutableStateOf("")
+    }
+
 
     Column(
         modifier = Modifier
             .fillMaxSize()
     ) {
 
-        LaunchedEffect(Unit) {
-            val request = Request.Builder().url("wss://free.blr2.piesocket.com/v3/1?api_key=iHWcLIKRFox5pcEto7xRs6LZztFdHjaSukLUiqEB")
-                .build()
-            val listener = object : WebSocketListener() {
-                override fun onMessage(webSocket: WebSocket, text: String) {
-                    GlobalScope.launch(Dispatchers.Main) {
-                        val chatMessage= ChatMessage(0,text)
-                        messages.add(chatMessage)
-                        Toast.makeText(context, "onMassage : $text", Toast.LENGTH_SHORT).show()
-                    }
-                }
-                override fun onOpen(webSocket: WebSocket, response: Response) {
-                    super.onOpen(webSocket, response)
-                    GlobalScope.launch(Dispatchers.Main) {
-                        Toast.makeText(context, "okey : $response", Toast.LENGTH_SHORT).show()
-                    }
-                }
+        val webSocket=WebsocketConnected(messages = messages)
 
-                override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                    super.onFailure(webSocket, t, response)
-                    GlobalScope.launch(Dispatchers.Main) {
-                        Toast.makeText(context, "onFailure : ${t.message}", Toast.LENGTH_SHORT).show()
-                    }
-                }
-
-                override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-                    super.onClosing(webSocket, code, reason)
-                    GlobalScope.launch(Dispatchers.Main) {
-                        Toast.makeText(context, "onClosing ->  code: $code , reason: $reason" , Toast.LENGTH_SHORT).show()
-                    }
-                }
-
-                override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                    super.onClosed(webSocket, code, reason)
-                    GlobalScope.launch(Dispatchers.Main) {
-                        Toast.makeText(context, "onClosed ->  code: $code , reason: $reason" , Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-            webSocket=client.newWebSocket(request, listener)
-        }
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
@@ -120,7 +96,8 @@ fun WebSocketDemo() {
                             .align(
                                 if (messages[it].userID == 1)
                                     Alignment.End
-                                else Alignment.Start
+                                else
+                                    Alignment.Start
                             )
                     ) {
                         Column(
@@ -132,7 +109,10 @@ fun WebSocketDemo() {
                                 fontSize = 17.sp,
                                 fontWeight = FontWeight.Medium,
                                 modifier = Modifier
-                                    .padding(7.dp)
+                                    .padding(7.dp),
+                                textAlign = if (messages[it].userID==1) TextAlign.End
+                                else TextAlign.Start
+
                             )
                         }
                     }
@@ -144,14 +124,14 @@ fun WebSocketDemo() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(0.1f),
+                .padding(10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             TextField(
-                value = text,
+                value = edtText,
                 onValueChange = {
-                    text = it
+                    edtText = it
                 },
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Cyan,
@@ -162,18 +142,23 @@ fun WebSocketDemo() {
                 shape = RoundedCornerShape(15.dp),
                  placeholder = {
                     Text(text = "Massage")
-                }
+                },
+                modifier = Modifier
+                    .weight(0.8f),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
+//            SendSmsButton(phoneNumber = "905602976", message = "12345 test")
 
             IconButton(
                 onClick = {
-                webSocket?.send(text)
-                    val chatMessage=ChatMessage(1,text)
+                webSocket?.send(edtText)
+                    val chatMessage=ChatMessage(1,edtText)
                 messages.add(chatMessage)
-                text=""
+                edtText=""
                 Log.d("LIST77",messages.lastIndex.toString())
-
-            }) {
+            },
+                modifier = Modifier
+                    .weight(0.2f)) {
                 Icon(
                     imageVector = Icons.Default.Send,
                     contentDescription = "send IconButton",
@@ -185,6 +170,24 @@ fun WebSocketDemo() {
     }
 }
 
+@Composable
+fun SendSmsButton(phoneNumber: String, message: String) {
+    val context = LocalContext.current
+
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Button(onClick = {
+            val smsUri = Uri.parse("sms:$phoneNumber")
+            val intent = Intent(Intent.ACTION_VIEW, smsUri)
+            intent.putExtra("sms_body", message)
+            context.startActivity(intent)
+        }) {
+            Text("SMS yuborish")
+        }
+    }
+}
 @Preview(showSystemUi = true)
 @Composable
 private fun ChatUi() {

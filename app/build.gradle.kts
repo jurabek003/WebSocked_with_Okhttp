@@ -80,6 +80,14 @@ dependencies {
 //// Gson
 //    implementation("com.google.code.gson:gson:2.10.1")
 
+    /**
+     * Websocket client for Android and Kotlin with OkHttp 4.x
+     */
     implementation ("com.squareup.okhttp3:okhttp:4.11.0")
+
+    /**
+     * Permission for Android
+     */
+    implementation("com.google.accompanist:accompanist-permissions:0.31.0-alpha")
 
 }
